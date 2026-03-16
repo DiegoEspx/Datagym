@@ -1,0 +1,6 @@
+Analyzing datagym...                                            
+
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\routines\screens\routine_edit_screen.dart:127:43 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\session\screens\new_session_screen.dart:202:43 - use_build_context_synchronously
+
+2 issues found. (ran in 1.5s)
