@@ -119,8 +119,7 @@ class SessionDetailScreen extends ConsumerWidget {
               if (confirm != true) return;
               await ref.read(sessionProvider.notifier).deleteSession(session.id!);
               if (!context.mounted) return;
-              Navigator.pop(context);
-              Navigator.pop(context);
+              Navigator.pop(context); // Solo cerramos SessionDetailScreen
             },
           ),
         ],

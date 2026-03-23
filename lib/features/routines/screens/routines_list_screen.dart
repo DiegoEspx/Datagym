@@ -70,14 +70,16 @@ class RoutinesListScreen extends ConsumerWidget {
   void _showRoutineOptions(BuildContext context, WidgetRef ref, dynamic routine) {
     showModalBottomSheet(
       context: context,
-      builder: (_) => Column(
+      useSafeArea: true,
+      builder: (sheetCtx) => SafeArea(
+        child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           ListTile(
             leading: const Icon(Icons.play_arrow, color: Colors.green),
             title: const Text('Iniciar sesión con esta rutina'),
             onTap: () {
-              Navigator.pop(context);
+              Navigator.pop(sheetCtx);
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -90,7 +92,7 @@ class RoutinesListScreen extends ConsumerWidget {
             leading: const Icon(Icons.edit, color: Colors.blue),
             title: const Text('Editar rutina'),
             onTap: () {
-              Navigator.pop(context);
+              Navigator.pop(sheetCtx);
               _openRoutineEditor(context, routine: routine);
             },
           ),
@@ -98,7 +100,7 @@ class RoutinesListScreen extends ConsumerWidget {
             leading: const Icon(Icons.delete_outline, color: Colors.redAccent),
             title: const Text('Eliminar rutina'),
             onTap: () async {
-              Navigator.pop(context);
+              Navigator.pop(sheetCtx);
               final shouldDelete = await showDialog<bool>(
                     context: context,
                     builder: (ctx) => AlertDialog(
@@ -118,6 +120,6 @@ class RoutinesListScreen extends ConsumerWidget {
           const SizedBox(height: 20),
         ],
       ),
-    );
+    ));
   }
 }

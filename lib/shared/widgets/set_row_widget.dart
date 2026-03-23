@@ -9,6 +9,7 @@ class SetRowWidget extends StatefulWidget {
   final VoidCallback onRemove;
   final Function(double) onWeightChanged;
   final Function(int) onRepsChanged;
+  final VoidCallback? onFieldEditComplete;
 
   const SetRowWidget({
     super.key,
@@ -20,6 +21,7 @@ class SetRowWidget extends StatefulWidget {
     required this.onRemove,
     required this.onWeightChanged,
     required this.onRepsChanged,
+    this.onFieldEditComplete,
   });
 
   @override
@@ -29,6 +31,7 @@ class SetRowWidget extends StatefulWidget {
 class _SetRowWidgetState extends State<SetRowWidget> {
   late final TextEditingController _weightController;
   late final TextEditingController _repsController;
+  bool _isChecked = false;
 
   @override
   void initState() {
@@ -59,61 +62,113 @@ class _SetRowWidgetState extends State<SetRowWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        left: widget.isDropSet ? 24 : 0,
-        top: 4,
-        right: 0,
-        bottom: 4,
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 12,
-            backgroundColor: widget.isDropSet ? Colors.orange : null,
-            child: Text(widget.isDropSet ? 'D' : '${widget.index}', style: const TextStyle(fontSize: 10)),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            flex: 2,
-            child: TextField(
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(suffixText: 'kg', contentPadding: EdgeInsets.symmetric(horizontal: 8)),
-              controller: _weightController,
-              onChanged: (val) {
-                final d = double.tryParse(val);
-                if (d != null) widget.onWeightChanged(d);
-              },
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            flex: 2,
-            child: TextField(
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(suffixText: 'reps', contentPadding: EdgeInsets.symmetric(horizontal: 8)),
-              controller: _repsController,
-              onChanged: (val) {
-                final i = int.tryParse(val);
-                if (i != null) widget.onRepsChanged(i);
-              },
-            ),
-          ),
-          if (widget.onAddDrop != null)
-            TextButton(
-              onPressed: widget.onAddDrop,
-              style: TextButton.styleFrom(
-                minimumSize: const Size(0, 28),
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    final colors = Theme.of(context).colorScheme;
+
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 200),
+      opacity: _isChecked ? 0.6 : 1.0,
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: widget.isDropSet ? 28 : 0,
+          top: 4,
+          right: 0,
+          bottom: 4,
+        ),
+        child: Row(
+          children: [
+            GestureDetector(
+              onTap: () => setState(() => _isChecked = !_isChecked),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: _isChecked
+                      ? colors.primary
+                      : (widget.isDropSet ? colors.secondary.withValues(alpha: 0.15) : colors.surfaceContainer),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: _isChecked ? colors.primary : colors.outlineVariant.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Center(
+                  child: _isChecked
+                      ? const Icon(Icons.check, size: 16, color: Colors.black)
+                      : Text(
+                          widget.isDropSet ? 'D' : '${widget.index}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: widget.isDropSet ? colors.secondary : colors.onSurfaceVariant,
+                          ),
+                        ),
+                ),
               ),
-              child: const Text('+ drop'),
             ),
-          IconButton(
-            icon: const Icon(Icons.close, size: 18),
-            onPressed: widget.onRemove,
-          ),
-        ],
+            const SizedBox(width: 12),
+            Expanded(
+              flex: 3,
+              child: TextField(
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+                decoration: InputDecoration(
+                  hintText: '0',
+                  suffixText: 'kg',
+                  suffixStyle: TextStyle(fontSize: 12, color: colors.onSurfaceVariant),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                ),
+                controller: _weightController,
+                onChanged: (val) {
+                  final d = double.tryParse(val);
+                  if (d != null) {
+                    widget.onWeightChanged(d);
+                    widget.onFieldEditComplete?.call();
+                  }
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              flex: 3,
+              child: TextField(
+                keyboardType: TextInputType.number,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+                decoration: InputDecoration(
+                  hintText: '0',
+                  suffixText: 'reps',
+                  suffixStyle: TextStyle(fontSize: 12, color: colors.onSurfaceVariant),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                ),
+                controller: _repsController,
+                onChanged: (val) {
+                  final i = int.tryParse(val);
+                  if (i != null) {
+                    widget.onRepsChanged(i);
+                    widget.onFieldEditComplete?.call();
+                  }
+                },
+              ),
+            ),
+            if (widget.onAddDrop != null)
+              Padding(
+                padding: const EdgeInsets.only(left: 4),
+                child: IconButton(
+                  icon: Icon(Icons.arrow_downward, size: 20, color: colors.secondary),
+                  tooltip: 'Drop set',
+                  onPressed: widget.onAddDrop,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+            IconButton(
+              icon: const Icon(Icons.close, size: 18),
+              onPressed: widget.onRemove,
+              color: colors.error.withValues(alpha: 0.7),
+              visualDensity: VisualDensity.compact,
+            ),
+          ],
+        ),
       ),
     );
   }

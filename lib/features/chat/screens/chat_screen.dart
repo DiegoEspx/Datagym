@@ -75,9 +75,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Expanded(
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: state.messages.length,
@@ -142,6 +143,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ),
         ],
       ),
-    );
+    ));
   }
 }

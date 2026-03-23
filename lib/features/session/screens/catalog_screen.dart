@@ -40,6 +40,48 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
     }
   }
 
+  Future<void> _renameCatalogItem(int id, String currentName) async {
+    final controller = TextEditingController(text: currentName);
+
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Renombrar ejercicio'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(hintText: 'Nuevo nombre'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
+
+    if (newName == null || newName.isEmpty || newName == currentName) return;
+
+    try {
+      await ref.read(sessionProvider.notifier).renameCatalogItem(id, newName);
+      if (!mounted) return;
+      setState(() {});
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceAll('Exception: ', '')),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -66,9 +108,18 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                 contentPadding: const EdgeInsets.symmetric(horizontal: 4),
                 leading: CircleAvatar(child: Text('${index + 1}')),
                 title: Text(item.name),
-                trailing: IconButton(
-                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                  onPressed: () => _deleteCatalogItem(item.id!, item.name),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined, color: Colors.amber),
+                      onPressed: () => _renameCatalogItem(item.id!, item.name),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                      onPressed: () => _deleteCatalogItem(item.id!, item.name),
+                    ),
+                  ],
                 ),
               );
             },

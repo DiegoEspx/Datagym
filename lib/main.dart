@@ -11,6 +11,8 @@ import 'features/session/screens/session_detail_screen.dart';
 import 'features/calendar/screens/calendar_screen.dart';
 import 'features/progress/screens/exercise_progress_screen.dart';
 import 'features/chat/screens/chat_screen.dart';
+import 'features/session/providers/draft_session_provider.dart';
+import 'core/services/excel_export_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -87,6 +89,7 @@ class HomeScreen extends ConsumerWidget {
 
     await showModalBottomSheet(
       context: context,
+      useSafeArea: true,
       builder: (sheetContext) {
         return SafeArea(
           child: Padding(
@@ -159,6 +162,25 @@ class HomeScreen extends ConsumerWidget {
           'DataGym',
           style: TextStyle(fontWeight: FontWeight.w800),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.file_download_outlined),
+            tooltip: 'Exportar a Excel',
+            onPressed: () async {
+              try {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Generando Excel...')),
+                );
+                await ExcelExportService.exportAndShare();
+              } catch (e) {
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error: $e')),
+                );
+              }
+            },
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -195,6 +217,43 @@ class HomeScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 20),
+            Builder(
+              builder: (context) {
+                final draft = ref.watch(draftSessionProvider);
+                if (draft == null) return const SizedBox.shrink();
+
+                final draftRoutineId = draft['routineId'] as int?;
+                final routines = ref.read(routineProvider);
+                final matchedRoutine = draftRoutineId != null
+                    ? routines.where((r) => r.id == draftRoutineId).firstOrNull
+                    : null;
+                final label = matchedRoutine != null
+                    ? 'Continuar: ${matchedRoutine.name}'
+                    : 'Continuar sesión libre';
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Card(
+                    color: Colors.amber.shade900.withValues(alpha: 0.35),
+                    child: ListTile(
+                      leading: const Icon(Icons.edit_note, color: Colors.amber),
+                      title: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
+                      subtitle: const Text('Sesión de hoy · Toca para continuar'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => NewSessionScreen(routine: matchedRoutine),
+                          ),
+                        );
+                        ref.read(sessionProvider.notifier).loadSessions();
+                      },
+                    ),
+                  ),
+                );
+              },
+            ),
             const Text('Asistente IA', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
             const SizedBox(height: 10),
             Card(

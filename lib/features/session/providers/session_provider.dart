@@ -71,6 +71,58 @@ class SessionNotifier extends StateNotifier<AsyncValue<List<Session>>> {
     return sessionId;
   }
 
+  Future<void> updateSession({
+    required int sessionId,
+    required String date,
+    int? routineId,
+    String? notes,
+    required List<Map<String, dynamic>> exercisesWithSets,
+  }) async {
+    final db = await DatabaseHelper.instance.database;
+
+    await db.transaction((txn) async {
+      // Update session metadata
+      await txn.update('sessions', {
+        'routine_id': routineId,
+        'date': date,
+        'notes': notes,
+      }, where: 'id = ?', whereArgs: [sessionId]);
+
+      // Delete old exercises and sets (cascade handles sets via session_exercise_id)
+      await txn.delete('sets', where: 'session_id = ?', whereArgs: [sessionId]);
+      await txn.delete('session_exercises', where: 'session_id = ?', whereArgs: [sessionId]);
+
+      // Re-insert exercises and sets
+      for (int exIndex = 0; exIndex < exercisesWithSets.length; exIndex++) {
+        final ex = exercisesWithSets[exIndex];
+        final sessionExerciseId = await txn.insert('session_exercises', {
+          'session_id': sessionId,
+          'catalog_id': ex['catalog_id'],
+          'order_index': exIndex + 1,
+          'superset_id': ex['superset_id'],
+          'notes': ex['notes'],
+        });
+
+        final sets = ex['sets'] as List;
+        for (int i = 0; i < sets.length; i++) {
+          final s = sets[i];
+          await txn.insert('sets', {
+            'session_exercise_id': sessionExerciseId,
+            'session_id': sessionId,
+            'order_index': i + 1,
+            'set_number': s['set_number'],
+            'drop_index': s['drop_index'] ?? 0,
+            'weight': s['weight'],
+            'unit': s['unit'] ?? 'kg',
+            'reps': s['reps'],
+          });
+        }
+      }
+    });
+
+    await loadSessions();
+  }
+
   Future<List<Map<String, dynamic>>> getSessionDetails(int sessionId) async {
     final db = await DatabaseHelper.instance.database;
     final exercises = await db.rawQuery('''
@@ -145,6 +197,19 @@ class SessionNotifier extends StateNotifier<AsyncValue<List<Session>>> {
     );
 
     await getCatalogExercises();
+  }
+
+  Future<void> renameCatalogItem(int id, String newName) async {
+    final db = await DatabaseHelper.instance.database;
+    await db.update(
+      'exercise_catalog',
+      {
+        'name': newName.trim(),
+        'name_normalized': newName.trim().toLowerCase(),
+      },
+      where: 'id = ?',
+      whereArgs: [id],
+    );
   }
 
   // Helper for Catalog

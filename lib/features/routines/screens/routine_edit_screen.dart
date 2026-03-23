@@ -41,6 +41,7 @@ class _RoutineEditScreenState extends ConsumerState<RoutineEditScreen> {
   Future<void> _showSupersetSelector(int exIndex) async {
     await showModalBottomSheet(
       context: context,
+      useSafeArea: true,
       builder: (sheetCtx) {
         final currentGroup = _selectedExercises[exIndex]['superset_group'] as int?;
         final candidates = <MapEntry<int, Map<String, dynamic>>>[];
@@ -253,13 +254,20 @@ class _RoutineEditScreenState extends ConsumerState<RoutineEditScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       builder: (sheetCtx) {
         return StatefulBuilder(
           builder: (modalCtx, setModalState) {
-            return Container(
-              height: MediaQuery.of(context).size.height * 0.7,
-              padding: const EdgeInsets.all(16),
-              child: Column(
+            return SafeArea(
+              child: Container(
+                height: MediaQuery.of(context).size.height * 0.7,
+                padding: EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  top: 16,
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+                ),
+                child: Column(
                 children: [
                   TextField(
                     controller: searchController,
@@ -313,7 +321,7 @@ class _RoutineEditScreenState extends ConsumerState<RoutineEditScreen> {
                   ),
                 ],
               ),
-            );
+            ));
           }
         );
       },
